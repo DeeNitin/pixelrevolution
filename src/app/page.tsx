@@ -13,29 +13,29 @@ type Pixel = {
 export default function Home() {
   const [pixels, setPixels] = useState<Pixel[]>([]);
 
-  useEffect(() => {
-    fetchPixels();
+ useEffect(() => {
+  fetchPixels();
 
-    const subscription = supabase
-      .channel("pixels-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pixels" },
-        (payload) => {
-          const updatedPixel = payload.new as Pixel;
-          setPixels((prev) =>
-            prev.map((pixel) =>
-              pixel.id === updatedPixel.id ? updatedPixel : pixel
-            )
-          );
-        }
-      )
-      .subscribe();
+  const subscription = supabase
+    .channel("pixels-channel")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "pixels" },
+      (payload) => {
+        const updatedPixel = payload.new as unknown as Pixel;
+        setPixels((prev) =>
+          prev.map((pixel) =>
+            pixel.id === updatedPixel.id ? updatedPixel : pixel
+          )
+        );
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
+  return () => {
+    supabase.removeChannel(subscription);
+  };
+}, []);
 
   async function fetchPixels() {
     const { data, error } = await supabase.from("pixels").select("*");
