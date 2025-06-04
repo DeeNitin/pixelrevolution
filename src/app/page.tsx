@@ -22,7 +22,7 @@ export default function Home() {
         "postgres_changes",
         { event: "*", schema: "public", table: "pixels" },
         (payload) => {
-          const updatedPixel = payload.new;
+          const updatedPixel = payload.new as Pixel;
           setPixels((prev) =>
             prev.map((pixel) =>
               pixel.id === updatedPixel.id ? updatedPixel : pixel
