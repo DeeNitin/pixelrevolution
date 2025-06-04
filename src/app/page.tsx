@@ -114,3 +114,41 @@ export default function Home() {
     </main>
   );
 }
+
+
+import Link from 'next/link';
+import React from 'react';
+
+export default function Footer() {
+  return (
+    <footer
+      style={{
+        marginTop: '3rem',
+        padding: '2rem',
+        borderTop: '1px solid #ddd',
+        textAlign: 'center',
+        fontSize: '0.9rem',
+        color: '#555',
+      }}
+    >
+      <nav style={{ marginBottom: '1rem' }}>
+        <Link href="/cancellation-refund" style={{ margin: '0 1rem' }}>
+          Cancellation & Refund
+        </Link>
+        <Link href="/shipping-delivery" style={{ margin: '0 1rem' }}>
+          Shipping & Delivery
+        </Link>
+        <Link href="/contact-us" style={{ margin: '0 1rem' }}>
+          Contact Us
+        </Link>
+        <Link href="/privacy-policy" style={{ margin: '0 1rem' }}>
+          Privacy Policy
+        </Link>
+        <Link href="/terms" style={{ margin: '0 1rem' }}>
+          Terms of Service
+        </Link>
+      </nav>
+      <p>© 2025 PixelRevolution. All rights reserved.</p>
+    </footer>
+  );
+}
