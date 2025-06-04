@@ -23,6 +23,7 @@ export default function Home() {
       { event: "*", schema: "public", table: "pixels" },
       (payload) => {
         const updatedPixel = payload.new as unknown as Pixel;
+
         setPixels((prev) =>
           prev.map((pixel) =>
             pixel.id === updatedPixel.id ? updatedPixel : pixel
@@ -36,6 +37,7 @@ export default function Home() {
     supabase.removeChannel(subscription);
   };
 }, []);
+
 
   async function fetchPixels() {
     const { data, error } = await supabase.from("pixels").select("*");
