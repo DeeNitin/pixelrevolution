@@ -1,35 +1,111 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
-const GRID_SIZE = 10;
+type Pixel = {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+};
 
 export default function Home() {
-  // Define pixel grid with color and owner
-  const [pixels, setPixels] = useState(
-    Array(GRID_SIZE * GRID_SIZE).fill({ owner: null, color: '#eee' })
-  );
+  const [pixels, setPixels] = useState<Pixel[]>([]);
 
-  // Handle pixel click
-  function handleClick(index: number) {
-    const newPixels = [...pixels];
-    newPixels[index] = {
-      owner: 'guest', // placeholder for now
-      color: '#f87171', // red-400 when claimed
+  useEffect(() => {
+    fetchPixels();
+
+    const subscription = supabase
+      .channel("pixels-channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pixels" },
+        (payload) => {
+          const updatedPixel = payload.new;
+          setPixels((prev) =>
+            prev.map((pixel) =>
+              pixel.id === updatedPixel.id ? updatedPixel : pixel
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
     };
-    setPixels(newPixels);
+  }, []);
+
+  async function fetchPixels() {
+    const { data, error } = await supabase.from("pixels").select("*");
+
+    if (error) {
+      console.error("Error fetching pixels:", error);
+      return;
+    }
+
+    if (data) {
+      setPixels(data);
+    }
+  }
+
+  async function updatePixelColor(id: number, color: string) {
+    const { error } = await supabase
+      .from("pixels")
+      .update({ color })
+      .eq("id", id);
+
+    return error;
+  }
+
+  function handlePixelClick(clickedPixel: Pixel) {
+    const newColor = clickedPixel.color === "blue" ? "white" : "blue";
+
+    // Save previous state for rollback
+    const previousPixels = [...pixels];
+
+    // Optimistic UI update
+    setPixels((prevPixels) =>
+      prevPixels.map((pixel) =>
+        pixel.id === clickedPixel.id ? { ...pixel, color: newColor } : pixel
+      )
+    );
+
+    // Update database
+    updatePixelColor(clickedPixel.id, newColor).then((error) => {
+      if (error) {
+        alert("Failed to update pixel. Reverting changes.");
+        setPixels(previousPixels); // rollback
+      }
+    });
   }
 
   return (
-    <main className="p-6">
-      <h1 className="text-3xl font-bold mb-4">PixelRevolution</h1>
-      <div className="grid grid-cols-10 gap-1" style={{ maxWidth: 500 }}>
-        {pixels.map((pixel, index) => (
+    <main style={{ padding: 20 }}>
+      <h1>Pixel Revolution</h1>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(100, 10px)",
+          gridTemplateRows: "repeat(100, 10px)",
+          gap: 1,
+          border: "1px solid #ccc",
+          width: "fit-content",
+        }}
+      >
+        {pixels.map((pixel) => (
           <div
-            key={index}
-            onClick={() => handleClick(index)}
-            className="w-10 h-10 cursor-pointer border border-gray-300 transition"
-            style={{ backgroundColor: pixel.color }}
+            key={pixel.id}
+            style={{
+              width: 10,
+              height: 10,
+              backgroundColor: pixel.color || "white",
+              gridColumnStart: pixel.x,
+              gridRowStart: pixel.y,
+              cursor: "pointer",
+            }}
+            onClick={() => handlePixelClick(pixel)}
           />
         ))}
       </div>
